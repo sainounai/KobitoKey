@@ -12,48 +12,50 @@ manifest:
       url-base: https://github.com/cormoran
 
   projects:
-    # ===== ZMK本体：公式 → cormoran版に差し替え（DYA Studioの心臓部）=====
+    # ZMK 本体: cormoran 版 (DYA Studio 対応 / v0.3 系)
     - name: zmk
       remote: cormoran
       revision: v0.3-branch+dya
       import: app/west.yml
 
-    # ===== 既存のモジュール（そのまま維持）=====
-    # トラックボールのセンサードライバ
+    # PMW3610 トラックボールドライバ
     - name: zmk-pmw3610-driver
       remote: badjeff
       revision: zmk-0.3
 
-    # センサーの角度補正
+    # センサー角度補正
     - name: zmk-feature-sensor_rotation
       remote: hsgw
       revision: main
 
-    # LEDでバッテリー・レイヤー表示
+    # LED ウィジェット
     - name: zmk-rgbled-widget
       remote: caksoylar
       revision: v0.3
 
-    # ===== DYA Studio用モジュール（新規追加）=====
-    # トラックボール設定をWebから変更可能に
+    # ---- DYA Studio 用モジュール ----
+    # 注意: 各モジュールの main は 2026/05 に ZMK v0.4 (Zephyr 4.1) へ移行済みで
+    #       v0.3 系ではビルドできません。v0.3 対応最終コミットに固定しています。
+
+    # トラックボール設定を Web から変更 (v4 移行 e643dfe の直前)
     - name: zmk-module-runtime-input-processor
       remote: cormoran
-      revision: main
+      revision: e186007
 
-    # バッテリー残量の履歴記録
+    # バッテリー履歴 (v4 移行なし / main 最終)
     - name: zmk-module-battery-history
       remote: cormoran
-      revision: main
+      revision: 307755d
 
-    # BLEプロファイル管理
+    # BLE プロファイル管理 (v0.4 移行 b7eccc3 の直前)
     - name: zmk-module-ble-management
       remote: cormoran
-      revision: main
+      revision: 851661c
 
-    # スリープ時間などの設定
+    # 各種設定 RPC (v4 移行なし)
     - name: zmk-module-settings-rpc
       remote: cormoran
-      revision: main
+      revision: ad1c995
 
   self:
     path: config
