@@ -12,7 +12,7 @@ manifest:
       url-base: https://github.com/cormoran
 
   projects:
-    # ZMK 本体: 公式 -> cormoran 版 (DYA Studio 対応)
+    # ZMK 本体: cormoran 版 (DYA Studio 対応 / v0.3 系)
     - name: zmk
       remote: cormoran
       revision: v0.3-branch+dya
@@ -33,25 +33,29 @@ manifest:
       remote: caksoylar
       revision: v0.3
 
-    # DYA Studio: トラックボール設定をWebから変更
+    # ---- DYA Studio 用モジュール ----
+    # 注意: 各モジュールの main は ZMK v0.4 (Zephyr 4.1) に移行済みで
+    #       v0.3 系ではビルドできません。v0.3 対応最終コミットに固定します。
+
+    # トラックボール設定を Web から変更 (v4 移行 e643dfe の直前)
     - name: zmk-module-runtime-input-processor
       remote: cormoran
-      revision: main
+      revision: e186007
 
-    # DYA Studio: バッテリー履歴
+    # バッテリー履歴
     - name: zmk-module-battery-history
       remote: cormoran
-      revision: main
+      revision: 307755d
 
-    # DYA Studio: BLE プロファイル管理
+    # BLE プロファイル管理 (v0.4 移行 b7eccc3 の直前)
     - name: zmk-module-ble-management
       remote: cormoran
-      revision: main
+      revision: 851661c
 
-    # DYA Studio: 各種設定 RPC
+    # 各種設定 RPC
     - name: zmk-module-settings-rpc
       remote: cormoran
-      revision: main
+      revision: ad1c995
 
   self:
     path: config
