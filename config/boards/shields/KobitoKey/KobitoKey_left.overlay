@@ -1,10 +1,14 @@
 #include "kobitokey.dtsi"
 #include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <dt-bindings/zmk/keys.h>
 #include <input/processors.dtsi>
 #include <input/processors/sensor_rotation.dtsi>
+#include <input/processors/runtime-input-processor.dtsi>
 
+/* XIAOのUARTを無効化（USBをStudio通信に使うため） */
 &xiao_serial { status = "disabled"; };
 
+/* ===== SPI（センサーとの通信路）のピン設定：変更なし ===== */
 &pinctrl {
     spi0_default: spi0_default {
         group1 {
@@ -23,6 +27,7 @@
     };
 };
 
+/* ===== 左のトラックボール本体：変更なし ===== */
 &spi0 {
     status = "okay";
     compatible = "nordic,nrf-spim";
@@ -37,8 +42,7 @@
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        cpi = <200>; /* センサー感度 */
-
+        cpi = <200>;                    /* センサー感度（ハードウェア側） */
 
         evt-type = <INPUT_EV_REL>;
         x-input-code = <INPUT_REL_X>;
@@ -46,59 +50,71 @@
     };
 };
 
+/* ============================================================
+ * ここからDYA Studio対応の本体
+ * 「実行中に値を書き換えられるprocessor」を左右に1個ずつ作る
+ * ============================================================ */
 / {
-    sensor_rotation_left: sensor-rotation-left {
-        compatible = "zmk,input-processor-sensor-rotation";
-        status = "okay";
+    /* 左ボール用（processor-label が Web UI 上での表示名になる） */
+    scroll_runtime_input_processor_l: scroll_runtime_input_processor_l {
+        compatible = "zmk,input-processor-runtime";
+        processor-label = "ScrL";
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+        track-remainders;               /* 端数を持ち越して滑らかにする */
+        scale-divisor = <60>;           /* 初期倍率 1/60。後からWebで変更可 */
+        xy-to-scroll-enabled;           /* XY移動→スクロール変換をWebでON/OFF可に */
         #input-processor-cells = <0>;
-        rotation-angle = <(-24)>;
     };
 
-    sensor_rotation_right: sensor-rotation-right {
-        compatible = "zmk,input-processor-sensor-rotation";
+    /* 右ボール用 */
+    scroll_runtime_input_processor_r: scroll_runtime_input_processor_r {
+        compatible = "zmk,input-processor-runtime";
+        processor-label = "ScrR";
+        type = <INPUT_EV_REL>;
+        x-codes = <INPUT_REL_X>;
+        y-codes = <INPUT_REL_Y>;
+        track-remainders;
+        scale-divisor = <60>;
+        xy-to-scroll-enabled;
         #input-processor-cells = <0>;
-        status = "okay";
-        rotation-angle = <24>;
     };
 };
 
+/* ===== 左ボール = スクロール ===== */
 &tb_left_listener {
     status = "okay";
     device = <&tb_left>;
 
     input-processors =
-            <&sensor_rotation_left>,
-            <&zip_x_scaler 0 1>,
-            <&zip_y_scaler 1 15>,
-            <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,
-            <&zip_scroll_transform INPUT_TRANSFORM_X_INVERT>;
-    };
-
-/ {
-  /omit-if-no-ref/ zip_temp_layer: zip_temp_layer {
-    compatible = "zmk,input-processor-temp-layer";
-    #input-processor-cells = <2>;
-    require-prior-idle-ms = <350>; /* キー押下後、何msオートマウスレイヤに入らないようにするか、誤爆防止 */
-  };
+            <&zip_xy_to_scroll_mapper>,                        /* XY移動→スクロール */
+            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,  /* Y反転 */
+            <&zip_scroll_transform INPUT_TRANSFORM_X_INVERT>,  /* X反転 */
+            <&scroll_runtime_input_processor_l>;               /* ←Webから調整する係 */
 };
 
+/* ===== 右ボール = マウスカーソル＋オートマウスレイヤー ===== */
+/* device は kobitokey.dtsi で &tb_right_split に設定済み */
 &tb_right_listener {
     status = "okay";
 
     input-processors =
-        <&sensor_rotation_right>,
-        <&zip_temp_layer 3 5000>; /* オートマウスレイヤーの指定とトラボ操作及びマウスボタン押下後に滞留する時間 */
+        <&mouse_runtime_input_processor        /* 感度・回転・オートマウスレイヤー */
+         &scroll_runtime_input_processor_r>;   /* スクロールに切り替えたいとき用 */
 };
 
-&zip_temp_layer {
-    excluded-positions = <
-        6
-        7
-        8
-        30
-        32
-        33
-        39
-    >;
+/* ===== 起動時の初期値（後からWebで自由に変更できます）===== */
+&mouse_runtime_input_processor {
+    rotation-degrees = <24>;                   /* 取り付け角度の補正 */
+
+    /* オートマウスレイヤー：ボールを動かすと自動でレイヤー3(MOUSE)へ */
+    temp-layer-enabled;
+    temp-layer = <3>;
+    temp-layer-activation-delay-ms = <350>;    /* 350ms以内のキー入力後は発動しない（誤爆防止） */
+    temp-layer-deactivation-delay-ms = <5000>; /* 5秒操作しなければ元のレイヤーに戻る */
+};
+
+&scroll_runtime_input_processor_l {
+    rotation-degrees = <(-24)>;                /* 左ボールの取り付け角度補正 */
 };
