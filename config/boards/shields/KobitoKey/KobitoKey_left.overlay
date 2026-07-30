@@ -42,7 +42,7 @@
         reg = <0>;
         spi-max-frequency = <2000000>;
         irq-gpios = <&gpio0 2 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
-        cpi = <200>;                    /* センサー感度（ハードウェア側） */
+        cpi = <200>;                    /* センサー感度（PMW3610の最小値） */
 
         evt-type = <INPUT_EV_REL>;
         x-input-code = <INPUT_REL_X>;
@@ -51,68 +51,58 @@
 };
 
 /* ============================================================
- * ここからDYA Studio対応の本体
- * 「実行中に値を書き換えられるprocessor」を左右に1個ずつ作る
+ * DYA Studio 対応：実行中に値を書き換えられる processor
+ *
+ * 【重要】runtime processor は x-codes/y-codes で指定した
+ * イベントコードに一致したときだけ動作する。
+ * zip_xy_to_scroll_mapper を通すと REL_X/REL_Y は
+ * REL_HWHEEL/REL_WHEEL に変わるので、mapper より
+ * 【先】に置かないと scale-divisor が無視される。
  * ============================================================ */
 / {
-    /* 左ボール用（processor-label が Web UI 上での表示名） */
+    /* 左ボール用（processor-label が DYA Studio 上での表示名） */
     scroll_runtime_input_processor_l: scroll_runtime_input_processor_l {
         compatible = "zmk,input-processor-runtime";
         processor-label = "ScrL";
         type = <INPUT_EV_REL>;
         x-codes = <INPUT_REL_X>;
         y-codes = <INPUT_REL_Y>;
-        track-remainders;
-        scale-divisor = <60>;
-        xy-to-scroll-enabled;
-        #input-processor-cells = <0>;
-    };
-
-    /* 右ボール用 */
-    scroll_runtime_input_processor_r: scroll_runtime_input_processor_r {
-        compatible = "zmk,input-processor-runtime";
-        processor-label = "ScrR";
-        type = <INPUT_EV_REL>;
-        x-codes = <INPUT_REL_X>;
-        y-codes = <INPUT_REL_Y>;
-        track-remainders;
-        scale-divisor = <60>;
-        xy-to-scroll-enabled;
+        track-remainders;               /* 端数を持ち越して滑らかにする */
+        scale-multiplier = <1>;
+        scale-divisor = <15>;           /* ★感度。大きくするほど遅くなる */
+        rotation-degrees = <(-24)>;     /* 取り付け角度の補正 */
         #input-processor-cells = <0>;
     };
 };
 
-/* ===== 左ボール = スクロール ===== */
+/* ===== 左ボール = スクロール専用 ===== */
 &tb_left_listener {
     status = "okay";
     device = <&tb_left>;
 
     input-processors =
-            <&zip_xy_to_scroll_mapper>,
-            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,
-            <&zip_scroll_transform INPUT_TRANSFORM_X_INVERT>,
-            <&scroll_runtime_input_processor_l>;
+            <&scroll_runtime_input_processor_l>,               /* ★X/Yの段階で回転と減速 */
+            <&zip_x_scaler 0 1>,                               /* 横スクロールを殺す */
+            <&zip_xy_to_scroll_mapper>,                        /* X/Y移動 → スクロール */
+            <&zip_scroll_transform INPUT_TRANSFORM_Y_INVERT>,  /* Y反転 */
+            <&zip_scroll_transform INPUT_TRANSFORM_X_INVERT>;  /* X反転 */
 };
 
 /* ===== 右ボール = マウスカーソル＋オートマウスレイヤー ===== */
+/* device は kobitokey.dtsi で &tb_right_split に設定済み */
 &tb_right_listener {
     status = "okay";
 
-    input-processors =
-        <&mouse_runtime_input_processor
-         &scroll_runtime_input_processor_r>;
+    input-processors = <&mouse_runtime_input_processor>;
 };
 
-/* ===== 起動時の初期値（後からWebで自由に変更できます）===== */
+/* ===== 起動時の初期値（後から DYA Studio で自由に変更できます）===== */
 &mouse_runtime_input_processor {
-    rotation-degrees = <24>;
+    rotation-degrees = <24>;                   /* 取り付け角度の補正 */
 
+    /* オートマウスレイヤー：ボールを動かすと自動でレイヤー3(MOUSE)へ */
     temp-layer-enabled;
     temp-layer = <3>;
-    temp-layer-activation-delay-ms = <350>;
-    temp-layer-deactivation-delay-ms = <5000>;
-};
-
-&scroll_runtime_input_processor_l {
-    rotation-degrees = <(-24)>;
+    temp-layer-activation-delay-ms = <350>;    /* キー入力直後は発動しない（誤爆防止） */
+    temp-layer-deactivation-delay-ms = <5000>; /* 5秒操作しなければ戻る */
 };
