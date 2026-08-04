@@ -80,10 +80,10 @@
         layer2 {
             label = "ARROW";
             bindings = <
-&none   &kp LS(LG(LEFT_ARROW))  &kp UP_ARROW    &kp LS(LG(RIGHT_ARROW))  &none   &kp BACKSLASH      &kp JP_QUOTE     &kp JP_LPAREN  &kp JP_RPAREN     &kp JP_AT
-&none   &kp LEFT_ARROW          &kp DOWN_ARROW  &kp RIGHT_ARROW          &none   &kp JP_UNDERSCORE  &kp DOLLAR       &kp PERCENT    &kp JP_AMPERSAND  &kp JP_TILDE
-&none   &none                   &none           &none                    &none   &kp QUESTION       &kp EXCLAMATION  &kp JP_DQUOTE  &kp HASH          &kp RIGHT_SHIFT
-&trans  &trans                  &trans          &trans                   &trans  &kp DELETE         &trans           &trans         &trans            &trans
+&none           &kp LS(LG(LEFT_ARROW))  &kp UP_ARROW    &kp LS(LG(RIGHT_ARROW))  &none   &kp BACKSLASH      &kp JP_QUOTE     &kp JP_LPAREN  &kp JP_RPAREN     &kp JP_AT
+&none           &kp LEFT_ARROW          &kp DOWN_ARROW  &kp RIGHT_ARROW          &none   &kp JP_UNDERSCORE  &kp DOLLAR       &kp PERCENT    &kp JP_AMPERSAND  &kp JP_TILDE
+&kp LG(LC(F4))  &kp LC(LG(LEFT_ARROW))  &kp LG(LC(D))   &kp LG(LC(RIGHT_ARROW))  &none   &kp QUESTION       &kp EXCLAMATION  &kp JP_DQUOTE  &kp HASH          &kp RIGHT_SHIFT
+&trans          &trans                  &trans          &trans                   &trans  &kp DELETE         &trans           &trans         &trans            &trans
             >;
         };
 
